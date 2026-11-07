@@ -13,15 +13,23 @@ async function pdfText(f){pdfjsLib.GlobalWorkerOptions.workerSrc='vendor/pdf.wor
 const p=await pdfjsLib.getDocument({data:await f.arrayBuffer(),isEvalSupported:false}).promise;let out='';
 for(let i=1;i<=p.numPages;i++){const c=await(await p.getPage(i)).getTextContent();let y=null,l='';
 for(const it of c.items){const yy=it.transform[5];if(y!==null&&Math.abs(yy-y)>3){out+=l+'\n';l=''}l+=it.str;y=yy}out+=l+'\n'}return out}
-function parse(t){const ls=t.split(/\r?\n/).map(s=>s.trim()).filter(Boolean);let ki=ls.findIndex(l=>/^kunci(\s+jawaban)?\b/i.test(l));
-const sl=ki<0?ls:ls.slice(0,ki),kl=ki<0?[]:ls.slice(ki+1),qs=[];let q=null,cur=null;
+function fixQ(ls){let nx=1;const o=[];
+for(let cur of ls){for(;;){const m=cur.match(/^(?:\[(?:PGK|PG|JODOH|BS)\]\s*)?(\d+)[.)]\s/i);if(m&&+m[1]==nx)nx++;
+const g=cur.search(new RegExp('[.?!"\u201d)]'+nx+'[.)]\\s+\\S'));if(g<0)break;o.push(cur.slice(0,g+1));cur=cur.slice(g+1)}o.push(cur)}
+return o.flatMap(l=>l.replace(/(\s|\d)((?:L|S)\d+[.)](?:\s|$))/g,(m,a,b)=>(/\s/.test(a)?'':a)+'\n'+b).replace(/(\s|\d|[\u{1D400}-\u{1D7FF}])([A-E][.)](?:\s|$))/gu,(m,a,b)=>(/\s/.test(a)?'':a)+'\n'+b).split('\n').map(x=>x.trim()).filter(Boolean))}
+function fixK(ls){let nk=1;const o=[];
+for(let cur of ls){for(;;){const m=cur.match(/^(\d+)[.):]\s/);if(m&&+m[1]==nk)nk++;
+const g=cur.search(new RegExp('[.?!)]'+nk+'[.):]\\s*(?:[A-E]|L\\d|[BS][,\\s])'));if(g<0)break;o.push(cur.slice(0,g+1));cur=cur.slice(g+1)}o.push(cur)}
+return o}
+function parse(t){t=t.replace(/(\S)(KUNCI\s+JAWABAN)/i,'$1\n$2');const ls=t.split(/\r?\n/).map(s=>s.trim()).filter(Boolean);let ki=ls.findIndex(l=>/^kunci(\s+jawaban)?\b/i.test(l));
+const sl=fixQ(ki<0?ls:ls.slice(0,ki)),kl=fixK(ki<0?[]:ls.slice(ki+1)),qs=[];let q=null,cur=null;
 for(const l of sl){let m=l.match(/^(?:\[(PGK|PG|JODOH|BS)\]\s*)?(\d+)[.)]\s+(.*)/i);
 if(m){q={n:+m[2],tag:(m[1]||'').toUpperCase(),text:m[3],opts:[],lefts:[],stm:[]};qs.push(q);cur=q;cur.f='text';continue}
 if(!q)continue;
 if(m=l.match(/^L(\d+)[.)]\s*(.*)/i)){q.lefts.push(m[2]);cur=q.lefts;cur.i=q.lefts.length-1;continue}
 if(m=l.match(/^S(\d+)[.)]\s*(.*)/i)){q.stm.push(m[2]);cur=q.stm;cur.i=q.stm.length-1;continue}
-if(m=l.match(/^([A-E])[.)]\s+(.*)/)){q.opts.push({k:m[1],t:m[2]});cur=q.opts;cur.i=q.opts.length-1;continue}
-if(cur===q)q.text+='\n'+l;else if(cur===q.opts)q.opts[cur.i].t+=' '+l;else cur[cur.i]+=' '+l}
+if(m=l.match(/^([A-E])[.)](?:\s+(.*))?$/)){q.opts.push({k:m[1],t:m[2]||''});cur=q.opts;cur.i=q.opts.length-1;continue}
+if(cur===q)q.text+=' '+l;else if(cur===q.opts)q.opts[cur.i].t+=' '+l;else cur[cur.i]+=' '+l}
 const K={};let e=null,inx=false;
 for(const l of kl){const m=l.match(/^(\d+)[.):]\s*(.*)/);if(m){e=K[+m[1]]={a:'',x:''};inx=false;let r=m[2];const p=r.match(/^(.*?)\s*(?:penjelasan|pembahasan)\s*:?\s*(.*)$/i);if(p){e.a=p[1];e.x=p[2];inx=true}else e.a=r;continue}
 if(!e)continue;const p=l.match(/^(?:penjelasan|pembahasan)\s*:?\s*(.*)$/i);if(p){inx=true;e.x+=p[1]}else if(inx)e.x+=' '+l;else e.a+=' '+l}
@@ -30,7 +38,7 @@ if(q.t=='JODOH')q.key=q.lefts.map((_,i)=>{const r=a.match(new RegExp('L?'+(i+1)+
 else if(q.t=='BS')q.key=a.split(/[\s,;]+/).filter(Boolean).slice(0,3).map(x=>/^b/i.test(x)?'B':'S');
 else if(q.t=='PGK')q.key=(a.match(/[A-E]/gi)||[]).map(x=>x.toUpperCase()).filter((v,i,r)=>r.indexOf(v)==i).sort();
 else q.key=(a.match(/[A-E]/i)||[''])[0].toUpperCase();
-q.exp=k.x;delete q.tag;delete q.f;return q})}
+q.lefts=q.lefts.map(x=>x.trim());q.stm=q.stm.map(x=>x.trim());q.opts.forEach(x=>x.t=x.t.trim());q.text=q.text.trim();q.exp=k.x;delete q.tag;delete q.f;return q})}
 
 function viewList(k){const L=D.sets[k]||[],nm=k=='tryout'?'Tryout':'Latihan Soal '+NAMA[k.split('-')[0]];
 $('#app').innerHTML=hdr(k=='tryout'?'Tryout':'Latihan '+NAMA[k])+`<div class="row opts"><label><input type="checkbox" id="aq" ${D.acakQ?'checked':''}> Acak urutan soal</label><label><input type="checkbox" id="ao" ${D.acakO?'checked':''}> Acak pilihan jawaban</label></div><p class="mu">Acak urutan bisa membuat soal yang memakai bacaan bersama jadi kurang nyambung.</p><div class="card"><b>Upload PDF soal &amp; jawaban</b>
