@@ -72,7 +72,7 @@ ${done?'':`<div class="row">Menit: <input type="number" id="mn" min="1" value="$
 <button data-do="${done?'redraw':'submit'}" ${done?'style="display:none"':''}>Kirim jawaban</button></div>
 ${done?`<div class="card"><h2>Jawaban terkirim </h2><div class="stat"><div style="background:var(--okb);color:var(--ok)">${sc.ok}<br><small>Benar</small></div><div style="background:var(--nob);color:var(--no)">${sc.no}<br><small>Salah</small></div></div><p>Nilai: <b>${Math.round(sc.ok/s.qs.length*100)}</b> / 100</p>${res?'':'<button data-do="showres">Lihat hasil</button>'}${sc.no?' <button class="g" data-do="retry">Ulangi yang salah</button>':''} <button class="g" data-do="finish">Selesai</button></div>`:''}
 ${s.qs.map((q,i)=>qH(q,i)).join('')}`;
-document.querySelectorAll('[data-a]').forEach(el=>el.onchange=ev=>setA(el))}
+document.querySelectorAll('[data-a]').forEach(el=>el.onchange=ev=>setA(el));lines()}
 const fmt=t=>String(Math.floor(t/60)).padStart(2,'0')+':'+String(t%60).padStart(2,'0');
 function tStart(){clearInterval(Q.iv);Q.mn=+$('#mn').value||30;Q.left=Q.mn*60;Q.iv=setInterval(()=>{Q.left--;const t=$('#tm');if(t)t.textContent=fmt(Q.left);if(Q.left<=0){clearInterval(Q.iv);Q.iv=null;submitQ(true)}},1000);$('#tm').textContent=fmt(Q.left)}
 function setA(el){const[i,j]=el.dataset.a.split('.'),q=Q.s.qs[i],a=Q.ans;
@@ -84,10 +84,10 @@ function ansTxt(q,a){return q.t=='JODOH'?q.lefts.map((_,i)=>`L${i+1}→${a[i]||'
 function qH(q,i){const A=Q.ans[i],d=Q.done,r=Q.res,c=r?(ok(q,A)?'ok':'no'):'',dis=d?'disabled':'';
 const lbl={PG:'Pilihan ganda',PGK:'Pilih lebih dari satu jawaban',JODOH:'Mencocokkan jawaban',BS:'Benar / Salah'}[q.t];let b='';
 if(q.t=='PG'||q.t=='PGK')b=q.opts.map(o=>`<label class="opt"><input type="${q.t=='PG'?'radio':'checkbox'}" name="q${i}" value="${o.k}" data-a="${i}.0" ${(q.t=='PG'?A==o.k:A.includes(o.k))?'checked':''} ${dis}><span><b>${o.k}.</b> ${esc(o.t)}</span></label>`).join('');
-else if(q.t=='JODOH')b=`<div class="mu pre">${q.opts.map(o=>`<b>${o.k}.</b> ${esc(o.t)}`).join('\n')}</div>`+q.lefts.map((l,j)=>`<div class="row" style="margin:8px 0"><span style="flex:1">${j+1}. ${esc(l)}</span><select data-a="${i}.${j}" ${dis}><option value="">Pilih</option>${q.opts.map(o=>`<option ${A[j]==o.k?'selected':''}>${o.k}</option>`).join('')}</select></div>`).join('');
+else if(q.t=='JODOH'){const sl=(Q.sel||{})[i];b=`<p class="mu">Ketuk item di kiri, lalu pasangannya di kanan. Ketuk pasangan yang sudah terhubung untuk melepasnya.</p><div class="match" data-m="${i}"><svg class="mlines" aria-hidden="true"></svg><div class="mcol">${q.lefts.map((l,j)=>`<button class="mi${A[j]?' on':''}${sl===j?' sel':''}" data-ml="${i}.${j}" ${dis}><span class="mt">${j+1}. ${esc(l)}</span><i class="dot"></i></button>`).join('')}</div><div class="mcol">${q.opts.map((o,k)=>`<button class="mi${A.includes(o.k)?' on':''}" data-mr="${i}.${k}" data-k="${o.k}" ${dis}><i class="dot"></i><span class="mt"><b>${o.k}.</b> ${esc(o.t)}</span></button>`).join('')}</div></div>`}
 else b=q.stm.map((l,j)=>`<div style="margin:8px 0">${esc(l)}<div class="row">${['B','S'].map(v=>`<label class="opt" style="margin:4px 0"><input type="radio" name="q${i}_${j}" value="${v}" data-a="${i}.${j}" ${A[j]==v?'checked':''} ${dis}>${v=='B'?'Benar':'Salah'}</label>`).join('')}</div></div>`).join('');
 let ex='';if(r){const good=ok(q,A);ex=`<div class="exp"><b style="color:var(--${good?'ok':'no'})">${good?'Benar':'Salah'}</b> · Jawabanmu: ${esc(ansTxt(q,A))}<br>Jawaban benar: <b>${esc(ansTxt(q,q.key))}</b>${q.exp?`<br><span class="pre">${esc(q.exp)}</span>`:'<br><span class="mu">(Penjelasan belum ada di PDF)</span>'}</div>`}
-return `<div class="card q ${c}"><span class="tag">${lbl}</span><div class="pre"><b>${i+1}.</b> ${esc(q.text)}</div>${b}${ex}</div>`}
+return `<div class="card q ${c}" data-qi="${i}"><span class="tag">${lbl}</span><div class="pre"><b>${i+1}.</b> ${esc(q.text)}</div>${b}${ex}</div>`}
 
 function nav(d){const p=route[route.length-1].slice(5).split('|');route[route.length-1]='read:'+p[0]+'|'+p[1]+'|'+(+p[2]+d);render();scrollTo(0,0)}
 const fm=s=>esc(s).split('**').map((x,i)=>i%2?'<b>'+x+'</b>':x).join('');
@@ -149,5 +149,21 @@ Object.assign(ACT,{
   const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([JSON.stringify({v:1,sets,hist:D.hist||[]})],{type:'application/json'}));a.download='cadangan-belajar-tka-'+new Date().toISOString().slice(0,10)+'.json';document.body.append(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(a.href),1e4)}});
 document.addEventListener('change',e=>{if(e.target.id=='aq'){D.acakQ=e.target.checked;save()}if(e.target.id=='ao'){D.acakO=e.target.checked;save()}});
 if('serviceWorker' in navigator&&location.protocol.startsWith('http'))addEventListener('load',()=>navigator.serviceWorker.register('sw.js').catch(()=>{}));
+
+
+/* ===== Menjodohkan: ketuk kiri lalu kanan, garis penghubung ===== */
+function lines(){if(!Q)return;document.querySelectorAll('.match').forEach(m=>{const sv=m.querySelector('svg'),i=+m.dataset.m,q=Q.s.qs[i],a=Q.ans[i],r=m.getBoundingClientRect();sv.textContent='';
+ q.lefts.forEach((_,j)=>{const k=a[j];if(!k)return;const L=m.querySelector(`[data-ml="${i}.${j}"] .dot`),R=m.querySelector(`[data-k="${k}"] .dot`);if(!L||!R)return;
+  const p=L.getBoundingClientRect(),n=R.getBoundingClientRect(),l=document.createElementNS('http://www.w3.org/2000/svg','line');
+  l.setAttribute('x1',p.left+p.width/2-r.left);l.setAttribute('y1',p.top+p.height/2-r.top);l.setAttribute('x2',n.left+n.width/2-r.left);l.setAttribute('y2',n.top+n.height/2-r.top);
+  l.setAttribute('class','ml'+(Q.res?(q.key[j]==k?' ok':' no'):''));sv.append(l)})})}
+document.addEventListener('click',e=>{const t=e.target.closest('[data-ml],[data-mr]');if(!t||!Q||Q.done)return;
+ const left=t.dataset.ml!=null,[i,j]=(left?t.dataset.ml:t.dataset.mr).split('.').map(Number),a=Q.ans[i];Q.sel=Q.sel||{};
+ if(left)Q.sel[i]=Q.sel[i]===j?null:j;
+ else{const k=Q.s.qs[i].opts[j].k,s=Q.sel[i];
+  if(s!=null){a.forEach((v,x)=>{if(v==k)a[x]=''});a[s]=k;Q.sel[i]=null}
+  else{const x=a.indexOf(k);if(x>=0)a[x]=''}}
+ document.querySelector(`[data-qi="${i}"]`).outerHTML=qH(Q.s.qs[i],i);lines()});
+addEventListener('resize',lines);if(document.fonts&&document.fonts.ready)document.fonts.ready.then(lines);
 
 (async()=>{const d=await kvGet('data');if(d)D=d;D.materi=D.materi||{indo:[],mtk:[]};D.hist=D.hist||[];mergeB();render();try{navigator.storage&&navigator.storage.persist&&navigator.storage.persist()}catch(e){}})();
