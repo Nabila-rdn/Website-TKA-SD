@@ -24,14 +24,14 @@ return o}
 function parse(t){t=t.replace(/(\S)(KUNCI\s+JAWABAN)/i,'$1\n$2');const ls=t.split(/\r?\n/).map(s=>s.trim()).filter(Boolean);let ki=ls.findIndex(l=>/^kunci(\s+jawaban)?\b/i.test(l));
 const sl=fixQ(ki<0?ls:ls.slice(0,ki)),kl=fixK(ki<0?[]:ls.slice(ki+1)),qs=[];let q=null,cur=null;
 for(const l of sl){let m=l.match(/^(?:\[(PGK|PG|JODOH|BS)\]\s*)?(\d+)[.)]\s+(.*)/i);
-if(m){q={n:+m[2],tag:(m[1]||'').toUpperCase(),text:m[3],opts:[],lefts:[],stm:[]};qs.push(q);cur=q;cur.f='text';continue}
+if(m&&(!q||m[1]||+m[2]==q.n+1)){q={n:+m[2],tag:(m[1]||'').toUpperCase(),text:m[3],opts:[],lefts:[],stm:[]};qs.push(q);cur=q;cur.f='text';continue}
 if(!q)continue;
 if(m=l.match(/^L(\d+)[.)]\s*(.*)/i)){q.lefts.push(m[2]);cur=q.lefts;cur.i=q.lefts.length-1;continue}
 if(m=l.match(/^S(\d+)[.)]\s*(.*)/i)){q.stm.push(m[2]);cur=q.stm;cur.i=q.stm.length-1;continue}
 if(m=l.match(/^([A-E])[.)](?:\s+(.*))?$/)){q.opts.push({k:m[1],t:m[2]||''});cur=q.opts;cur.i=q.opts.length-1;continue}
 if(cur===q)q.text+=' '+l;else if(cur===q.opts)q.opts[cur.i].t+=' '+l;else cur[cur.i]+=' '+l}
-const K={};let e=null,inx=false;
-for(const l of kl){const m=l.match(/^(\d+)[.):]\s*(.*)/);if(m){e=K[+m[1]]={a:'',x:''};inx=false;let r=m[2];const p=r.match(/^(.*?)\s*(?:penjelasan|pembahasan)\s*:?\s*(.*)$/i);if(p){e.a=p[1];e.x=p[2];inx=true}else e.a=r;continue}
+const K={};let e=null,inx=false,lk=0;
+for(const l of kl){const m=l.match(/^(\d+)[.):]\s*(.*)/);if(m&&(!lk||+m[1]==lk+1)){lk=+m[1];e=K[+m[1]]={a:'',x:''};inx=false;let r=m[2];const p=r.match(/^(.*?)\s*(?:penjelasan|pembahasan)\s*:?\s*(.*)$/i);if(p){e.a=p[1];e.x=p[2];inx=true}else e.a=r;continue}
 if(!e)continue;const p=l.match(/^(?:penjelasan|pembahasan)\s*:?\s*(.*)$/i);if(p){inx=true;e.x+=p[1]}else if(inx)e.x+=' '+l;else e.a+=' '+l}
 return qs.map(q=>{q.t=q.tag||(q.lefts.length?'JODOH':q.stm.length?'BS':'PG');const k=K[q.n]||{a:'',x:''},a=k.a;
 if(q.t=='JODOH')q.key=q.lefts.map((_,i)=>{const r=a.match(new RegExp('L?'+(i+1)+'\\s*[-=:→>]+\\s*([A-E])','i'));return r?r[1].toUpperCase():''});
