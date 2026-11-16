@@ -99,7 +99,7 @@ function mk(t){return t.split('\n').map(l=>{l=l.trim();if(!l)return'';const c=l[
  return `<p>${fm(l)}</p>`}).join('')}
 const _mk=mk;
 mk=function(t){let o='',b=[];for(const l of t.split('\n')){if(l[0]=='@'){o+=_mk(b.join('\n'));b=[];o+=`<div class='fig'>${FIG[l.slice(1).trim()]}</div>`}else b.push(l)}return o+_mk(b.join('\n'))};
-function mergeB(){D.sets=D.sets||{};for(const k in PK){D.sets[k]=[...PK[k].map((x,i)=>({id:'b-'+k+'-'+i,name:x.n,builtin:1,qs:x.p.flatMap(parse)})),...(D.sets[k]||[]).filter(s=>!s.builtin)]}}
+function mergeB(){D.sets=D.sets||{};for(const k in PK){D.sets[k]=[...PK[k].map((x,i)=>({id:'b-'+k+'-'+i,name:x.n,builtin:1,qs:x.qs||x.p.flatMap(parse)})),...(D.sets[k]||[]).filter(s=>!s.builtin)]}}
 
 const hdr=t=>`<nav class="crumbs"><button class="link" data-do="back">← Kembali</button><button class="link" data-do="home">Beranda</button></nav><h2>${t}</h2>`;
 const row=(go,no,nm,sub)=>`<li><button data-go="${go}"><span class="no">${no}</span><span class="nm">${nm}<small>${sub}</small></span><span class="ar">→</span></button></li>`;
